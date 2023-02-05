@@ -114,4 +114,9 @@ public class MultiDistanceTrigger : MonoBehaviour, ICondition
     {
         OnTrigger.Invoke();
     }
+
+    public void Reset()
+    {
+        _init = false;
+    }
 }

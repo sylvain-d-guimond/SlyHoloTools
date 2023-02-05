@@ -20,7 +20,12 @@ public class TrackHand : MonoBehaviour
     public Vector3 PositionOffset;
     public Vector3 RotationOffset;
 
-    void LateUpdate()
+    private void OnEnable()
+    {
+        Update();
+    }
+
+    void Update()
     {
         if (_trackedTransform == null)
         {
@@ -38,5 +43,19 @@ public class TrackHand : MonoBehaviour
             if (Rotation) transform.rotation = 
                     Quaternion.Slerp(transform.rotation, _trackedTransform.rotation*Quaternion.Euler(RotationOffset), Time.deltaTime/RotationDamping);
         }
+    }
+
+    public void SetLeft()
+    {
+        Handedness = Handedness.Left;
+        _trackedTransform = null;
+        Update();
+    }
+
+    public void SetRight()
+    {
+        Handedness = Handedness.Right;
+        _trackedTransform = null;
+        Update();
     }
 }

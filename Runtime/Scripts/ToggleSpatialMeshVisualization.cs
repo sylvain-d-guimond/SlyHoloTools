@@ -20,6 +20,7 @@ namespace Microsoft.MixedReality.Toolkit.Examples.Demos
         {
             // Get the first Mesh Observer available, generally we have only one registered
             var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<IMixedRealitySpatialAwarenessMeshObserver>();
+            //var observer = CoreServices.GetSpatialAwarenessSystemDataProvider<>();
 
             if (mode == true)
             {
