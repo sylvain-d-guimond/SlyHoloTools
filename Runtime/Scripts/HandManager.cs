@@ -1,10 +1,10 @@
-using Microsoft.MixedReality.Toolkit.Input;
-using Microsoft.MixedReality.Toolkit;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Microsoft.MixedReality.Toolkit.Utilities;
 using System;
+using MixedReality.Toolkit.Subsystems;
+using MixedReality.Toolkit;
+using NaughtyAttributes;
+using MixedReality.Toolkit.Input;
 
 public class HandManager : MonoBehaviour
 {
@@ -12,36 +12,81 @@ public class HandManager : MonoBehaviour
 
     public bool ExcludeMetacarpals = true;
 
-    private IMixedRealityHandJointService _handJointService;
-    private Dictionary<Handedness, Dictionary<TrackedHandJoint, Transform>> _joints = new Dictionary<Handedness, Dictionary<TrackedHandJoint, Transform>>();
+    private Dictionary<Fingers, List<TrackedHandJoint>> _hands;
+    private List<TrackedHandJoint> _metacarpals;
+
+    private HandJointPoseSource p1 = new HandJointPoseSource(), p2 = new HandJointPoseSource();
+    private Pose pose1, pose2;
 
     private void Awake()
     {
         Instance = this;
+
+        _hands = new Dictionary<Fingers, List<TrackedHandJoint>>();
+
+        var index = new List<TrackedHandJoint>();
+        index.Add(TrackedHandJoint.IndexMetacarpal);
+        index.Add(TrackedHandJoint.IndexProximal);
+        index.Add(TrackedHandJoint.IndexIntermediate);
+        index.Add(TrackedHandJoint.IndexDistal);
+        index.Add(TrackedHandJoint.IndexTip);
+        _hands.Add(Fingers.Index, index);
+
+        var middle = new List<TrackedHandJoint>();
+        middle.Add(TrackedHandJoint.MiddleMetacarpal);
+        middle.Add(TrackedHandJoint.MiddleProximal);
+        middle.Add(TrackedHandJoint.MiddleIntermediate);
+        middle.Add(TrackedHandJoint.MiddleDistal);
+        middle.Add(TrackedHandJoint.MiddleTip);
+        _hands.Add(Fingers.Middle, middle);
+
+        var ring = new List<TrackedHandJoint>();
+        ring.Add(TrackedHandJoint.RingMetacarpal);
+        ring.Add(TrackedHandJoint.RingProximal);
+        ring.Add(TrackedHandJoint.RingIntermediate);
+        ring.Add(TrackedHandJoint.RingDistal);
+        ring.Add(TrackedHandJoint.RingTip);
+        _hands.Add(Fingers.Ring, ring);
+
+        var pinky = new List<TrackedHandJoint>();
+       pinky.Add(TrackedHandJoint.LittleMetacarpal);
+       pinky.Add(TrackedHandJoint.LittleProximal);
+       pinky.Add(TrackedHandJoint.LittleIntermediate);
+       pinky.Add(TrackedHandJoint.LittleDistal);
+       pinky.Add(TrackedHandJoint.LittleTip);
+        _hands.Add(Fingers.Pinky, pinky);
+
+        var thumb = new List<TrackedHandJoint>();
+        thumb.Add(TrackedHandJoint.ThumbMetacarpal);
+        thumb.Add(TrackedHandJoint.ThumbProximal);
+        thumb.Add(TrackedHandJoint.ThumbDistal);
+        thumb.Add(TrackedHandJoint.ThumbTip);
+        _hands.Add(Fingers.Thumb, thumb);
+
+        _metacarpals = new List<TrackedHandJoint>();
+        _metacarpals.Add(TrackedHandJoint.IndexMetacarpal);
+        _metacarpals.Add(TrackedHandJoint.MiddleMetacarpal);
+        _metacarpals.Add(TrackedHandJoint.RingMetacarpal);
+        _metacarpals.Add(TrackedHandJoint.LittleMetacarpal);
+        _metacarpals.Add(TrackedHandJoint.ThumbMetacarpal);
     }
 
-    void Start()
+    float AddAngle(Handedness hand, List<TrackedHandJoint> joints)
     {
-        _handJointService = CoreServices.GetInputSystemDataProvider<IMixedRealityHandJointService>();
+        var angle = 0f;
 
-        _joints.Add(Handedness.Left, new Dictionary<TrackedHandJoint, Transform>());
-        _joints.Add(Handedness.Right, new Dictionary<TrackedHandJoint, Transform>());
-
-        foreach (TrackedHandJoint trackedJoint in Enum.GetValues(typeof(TrackedHandJoint)))
+        for (int i=0; i<joints.Count-2; i++)
         {
-            _joints[Handedness.Left].Add(trackedJoint, _handJointService.RequestJointTransform(trackedJoint, Handedness.Left));
-            _joints[Handedness.Right].Add(trackedJoint, _handJointService.RequestJointTransform(trackedJoint, Handedness.Right));
+            if (ExcludeMetacarpals && _metacarpals.Contains(_hands[Fingers.Index][i])) continue;
+            p1.Hand = p2.Hand = hand; 
+            p1.Joint = _hands[Fingers.Index][i];
+            p2.Joint = _hands[Fingers.Index][i+1];
+            p1.TryGetPose(out pose1);
+            p2.TryGetPose(out pose2);
+            angle += Vector3.Angle(pose1.forward, pose2.forward);
         }
-    }
 
-    public Transform Get(Handedness hand, TrackedHandJoint joint)
-    {
-        return _joints[hand][joint];
-    }
-
-    public bool IsHandTracked(Handedness hand)
-    {
-        return _handJointService.IsHandTracked(hand);
+        return angle;
     }
 
     public float FingerAngle(Handedness hand, Fingers finger)
@@ -49,66 +94,29 @@ public class HandManager : MonoBehaviour
         var angle = 0f;
         var count = 0;
 
-        if ((finger & Fingers.Index) == Fingers.Index) {
-            //Angle between metacarpal and proximal phalanges
-            if (!ExcludeMetacarpals) angle += Vector3.Angle(_joints[hand][TrackedHandJoint.IndexKnuckle].position - _joints[hand][TrackedHandJoint.IndexMetacarpal].position,
-                _joints[hand][TrackedHandJoint.IndexMiddleJoint].position - _joints[hand][TrackedHandJoint.IndexKnuckle].position);
-            //Angle between proximal and intermediate phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.IndexMiddleJoint].position - _joints[hand][TrackedHandJoint.IndexKnuckle].position,
-                _joints[hand][TrackedHandJoint.IndexDistalJoint].position - _joints[hand][TrackedHandJoint.IndexMiddleJoint].position);
-            //Angle between intermediate and distal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.IndexDistalJoint].position - _joints[hand][TrackedHandJoint.IndexMiddleJoint].position,
-                _joints[hand][TrackedHandJoint.IndexTip].position - _joints[hand][TrackedHandJoint.IndexDistalJoint].position);
-            count++;
+        if ((finger & Fingers.Index) == Fingers.Index)
+        {
+            angle += AddAngle(hand, _hands[Fingers.Index]);
         }
 
-        if ((finger & Fingers.Middle) == Fingers.Middle) {
-            //Angle between metacarpal and proximal phalanges
-            if (!ExcludeMetacarpals) angle += Vector3.Angle(_joints[hand][TrackedHandJoint.MiddleKnuckle].position - _joints[hand][TrackedHandJoint.MiddleMetacarpal].position,
-                _joints[hand][TrackedHandJoint.MiddleMiddleJoint].position - _joints[hand][TrackedHandJoint.MiddleKnuckle].position);
-            //Angle between proximal and intermediate phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.MiddleMiddleJoint].position - _joints[hand][TrackedHandJoint.MiddleKnuckle].position,
-                _joints[hand][TrackedHandJoint.MiddleDistalJoint].position - _joints[hand][TrackedHandJoint.MiddleMiddleJoint].position);
-            //Angle between intermediate and distal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.MiddleDistalJoint].position - _joints[hand][TrackedHandJoint.MiddleMiddleJoint].position,
-                _joints[hand][TrackedHandJoint.MiddleTip].position - _joints[hand][TrackedHandJoint.MiddleDistalJoint].position);
-            count++;
+        if ((finger & Fingers.Middle) == Fingers.Middle)
+        {
+            angle += AddAngle(hand, _hands[Fingers.Middle]);
         }
 
-        if ((finger &  Fingers.Ring) == Fingers.Ring) {
-            //Angle between metacarpal and proximal phalanges
-            if (!ExcludeMetacarpals) angle += Vector3.Angle(_joints[hand][TrackedHandJoint.RingKnuckle].position - _joints[hand][TrackedHandJoint.RingMetacarpal].position,
-                _joints[hand][TrackedHandJoint.RingMiddleJoint].position - _joints[hand][TrackedHandJoint.RingKnuckle].position);
-            //Angle between proximal and intermediate phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.RingMiddleJoint].position - _joints[hand][TrackedHandJoint.RingKnuckle].position,
-                _joints[hand][TrackedHandJoint.RingDistalJoint].position - _joints[hand][TrackedHandJoint.RingMiddleJoint].position);
-            //Angle between intermediate and distal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.RingDistalJoint].position - _joints[hand][TrackedHandJoint.RingMiddleJoint].position,
-                _joints[hand][TrackedHandJoint.RingTip].position - _joints[hand][TrackedHandJoint.RingDistalJoint].position);
-            count++;
+        if ((finger & Fingers.Ring) == Fingers.Ring)
+        {
+            angle += AddAngle(hand, _hands[Fingers.Ring]);
         }
 
-        if ((finger & Fingers.Pinky) == Fingers.Pinky) {
-            //Angle between metacarpal and proximal phalanges
-            if (!ExcludeMetacarpals) angle += Vector3.Angle(_joints[hand][TrackedHandJoint.PinkyKnuckle].position - _joints[hand][TrackedHandJoint.PinkyMetacarpal].position,
-                _joints[hand][TrackedHandJoint.PinkyMiddleJoint].position - _joints[hand][TrackedHandJoint.PinkyKnuckle].position);
-            //Angle between proximal and intermediate phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.PinkyMiddleJoint].position - _joints[hand][TrackedHandJoint.PinkyKnuckle].position,
-                _joints[hand][TrackedHandJoint.PinkyDistalJoint].position - _joints[hand][TrackedHandJoint.PinkyMiddleJoint].position);
-            //Angle between intermediate and distal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.PinkyDistalJoint].position - _joints[hand][TrackedHandJoint.PinkyMiddleJoint].position,
-                _joints[hand][TrackedHandJoint.PinkyTip].position - _joints[hand][TrackedHandJoint.PinkyDistalJoint].position);
-            count++;
+        if ((finger & Fingers.Pinky) == Fingers.Pinky)
+        {
+            angle += AddAngle(hand, _hands[Fingers.Pinky]);
         }
 
-        if ((finger & Fingers.Thumb) == Fingers.Thumb) {
-            //Angle between metacarpal and proximal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.ThumbProximalJoint].position - _joints[hand][TrackedHandJoint.PinkyMetacarpal].position,
-                _joints[hand][TrackedHandJoint.ThumbDistalJoint].position - _joints[hand][TrackedHandJoint.ThumbProximalJoint].position);
-            //Angle between proximal and distal phalanges
-            angle += Vector3.Angle(_joints[hand][TrackedHandJoint.ThumbDistalJoint].position - _joints[hand][TrackedHandJoint.ThumbProximalJoint].position,
-                _joints[hand][TrackedHandJoint.ThumbTip].position - _joints[hand][TrackedHandJoint.ThumbDistalJoint].position);
-            count++;
+        if ((finger & Fingers.Thumb) == Fingers.Thumb)
+        {
+            angle += AddAngle(hand, _hands[Fingers.Thumb]);
         }
 
         if (count > 0)

@@ -2,9 +2,11 @@
     "name": "Unity.SlyHoloTools",
     "rootNamespace": "",
     "references": [
-        "Microsoft.MixedReality.Toolkit",
         "Unity.TextMeshPro",
-        "Unity.SlyUnityTools"
+        "Unity.SlyUnityTools",
+        "MixedReality.Toolkit.Core",
+		"MixedReality.Toolkit.Input",
+        "NaughtyAttributes.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

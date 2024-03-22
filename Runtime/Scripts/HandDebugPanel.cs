@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using Microsoft.MixedReality.Toolkit.Utilities;
+using MixedReality.Toolkit;
 
 public class HandDebugPanel : MonoBehaviour
 {
@@ -39,8 +39,8 @@ public class HandDebugPanel : MonoBehaviour
     {
         if (HandManager.Instance != null)
         {
-            LeftHandTracked.text = HandManager.Instance.IsHandTracked(Handedness.Left).ToString();
-            RightHandTracked.text = HandManager.Instance.IsHandTracked(Handedness.Right).ToString();
+            //LeftHandTracked.text = HandManager.Instance.IsHandTracked(Handedness.Left).ToString();
+            //RightHandTracked.text = HandManager.Instance.IsHandTracked(Handedness.Right).ToString();
 
             LeftHandIndexAngle.text = HandManager.Instance.FingerAngle(Handedness.Left, Fingers.Index).ToString();
             RightHandIndexAngle.text = HandManager.Instance.FingerAngle(Handedness.Right, Fingers.Index).ToString();

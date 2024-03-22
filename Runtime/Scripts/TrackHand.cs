@@ -1,12 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Microsoft.MixedReality.Toolkit.Input;
-using Microsoft.MixedReality.Toolkit.Utilities;
-using Microsoft.MixedReality.Toolkit;
+//using Microsoft.MixedReality.Toolkit.Input;
+//using Microsoft.MixedReality.Toolkit.Utilities;
+//using Microsoft.MixedReality.Toolkit;
 
 public class TrackHand : MonoBehaviour
-{
+{/*
     private Transform _trackedTransform;
     public TrackedHandJoint TrackedJoint;
     public Handedness Handedness;
@@ -58,4 +58,5 @@ public class TrackHand : MonoBehaviour
         _trackedTransform = null;
         Update();
     }
+    */
 }
