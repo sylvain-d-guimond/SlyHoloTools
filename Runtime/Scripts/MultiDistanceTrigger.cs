@@ -1,10 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Security.Permissions;
+using MixedReality.Toolkit;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class MultiDistanceTrigger : MonoBehaviour, ICondition
+public class MultiDistanceTrigger : MonoBehaviour, ICondition, IHandedComponent
 {
     public static MultiDistanceTrigger Instance;
 
@@ -12,29 +11,36 @@ public class MultiDistanceTrigger : MonoBehaviour, ICondition
     public float MinInitDistance;
     public float TriggerDistance;
     public bool Invert;
+    public bool Average;
 
     public UnityEvent OnTrigger;
 
     public string DebugText;
 
-    private bool _init;
-    private float _maxDistance;
-    private bool _met;
+    [SerializeField] private Handedness handedness;
+    [SerializeField, ReadOnly]
+    private bool init;
+    private float maxDistance;
+    [SerializeField, ReadOnly]
+    private bool met;
 
-    public float MaxDistance { get => _maxDistance; }
+    public float MaxDistance { get => maxDistance; }
     public bool Met
     {
-        get => _met;
+        get => met;
         set
         {
-            if (_met != value)
+            if (met != value)
             {
-                _met = value;
+                met = value;
                 OnConditionChanged.Invoke(value);
             }
         }
     }
-    public ConditionEvent OnConditionChanged { get; set; } = new ConditionEvent();
+    public UnityEvent<bool> OnConditionChanged { get; set; } = new UnityEvent<bool>();
+    public Handedness Hand { get => handedness; set => handedness = value; }
+
+    [SerializeField, ReadOnly] private float distance;
 
     private void Start()
     {
@@ -43,51 +49,87 @@ public class MultiDistanceTrigger : MonoBehaviour, ICondition
 
     private void OnEnable()
     {
-        _init = false;
+        init = false;
     }
 
     private void Update()
     {
-        if (!_init)
+        if (HandManager.Instance.IsHandTracked(handedness))
         {
-            //Not initialized yet, waiting for minimum distance to be reached before enabling trigger
-            var inited = false;
-
-            for (int i=0;i<Targets.Length; i++)
+            if (!init)
             {
-                for (int j=0; j<Targets.Length; j++)
+                //Not initialized yet, waiting for minimum distance to be reached before enabling trigger
+                var inited = false;
+
+                for (int i = 0; i < Targets.Length; i++)
                 {
-                    if (i != j)
+                    for (int j = 0; j < Targets.Length; j++)
                     {
-                        if (!Invert && (Targets[i].position - Targets[j].position).magnitude > MinInitDistance)
+                        if (i != j)
                         {
-                            inited = true;
-                            if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger initialized: {gameObject.name}");
-                        } else if (Invert && (Targets[i].position - Targets[j].position).magnitude < MinInitDistance)
-                        {
-                            inited = true;
-                            if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger initialized: {gameObject.name}");
+                            if (!Invert && (Targets[i].position - Targets[j].position).magnitude > MinInitDistance)
+                            {
+                                inited = true;
+                                if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger initialized: {gameObject.name}");
+                            }
+                            else if (Invert && (Targets[i].position - Targets[j].position).magnitude < MinInitDistance)
+                            {
+                                inited = true;
+                                if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger initialized: {gameObject.name}");
+                            }
                         }
                     }
                 }
+
+                if (inited) init = true;
             }
-
-            if (inited) _init = true;
-        }
-        else
-        {
-            //Initialized, now the trigger can be activated
-
-            var triggered = true;
-
-            for (int i = 0; i < Targets.Length; i++)
+            else
             {
-                for (int j = 0; j < Targets.Length; j++)
+                //Is hand tracked?
+                if (HandManager.Instance.IsHandTracked(handedness))
                 {
-                    if (i != j)
+                    //Initialized, now the trigger can be activated
+
+                    var triggered = true;
+
+                    if (!Average)
                     {
-                        var distance = (Targets[i].position - Targets[j].position).magnitude;
-                        if (distance > _maxDistance) _maxDistance = distance;
+                        for (int i = 0; i < Targets.Length; i++)
+                        {
+                            for (int j = 0; j < Targets.Length; j++)
+                            {
+                                if (i != j)
+                                {
+                                    distance = (Targets[i].position - Targets[j].position).magnitude;
+                                    if (distance > maxDistance) maxDistance = distance;
+                                    if (!Invert && distance > TriggerDistance)
+                                    {
+                                        triggered = false;
+                                    }
+                                    else if (Invert && distance < TriggerDistance)
+                                    {
+                                        triggered = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        distance = 0f;
+                        for (int i = 0; i < Targets.Length; i++)
+                        {
+                            for (int j = 0; j < Targets.Length; j++)
+                            {
+                                if (i != j)
+                                {
+                                    distance += (Targets[i].position - Targets[j].position).magnitude;
+                                }
+                            }
+                        }
+
+                        distance /= Targets.Length;
+
                         if (!Invert && distance > TriggerDistance)
                         {
                             triggered = false;
@@ -97,17 +139,18 @@ public class MultiDistanceTrigger : MonoBehaviour, ICondition
                             triggered = false;
                         }
                     }
+
+                    if (triggered)
+                    {
+                        if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger {gameObject.name} called: {DebugText}");
+                        OnTrigger.Invoke();
+                        Met = true;
+                    }
+                    else { Met = false; }
                 }
             }
-
-            if (triggered)
-            {
-                if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Distance trigger {gameObject.name} called: {DebugText}");
-                OnTrigger.Invoke();
-                Met = true;
-            }
-            else { Met = false; }
         }
+        else Met = false;
     }
 
     public void TriggerDirectly()
@@ -117,6 +160,6 @@ public class MultiDistanceTrigger : MonoBehaviour, ICondition
 
     public void Reset()
     {
-        _init = false;
+        init = false;
     }
 }

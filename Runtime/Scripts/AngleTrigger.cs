@@ -1,23 +1,26 @@
 using MixedReality.Toolkit;
+using NaughtyAttributes;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class AngleTrigger : MonoBehaviour, ICondition
+public class AngleTrigger : MonoBehaviour, ICondition, IHandedComponent
 {
-    public Handedness Hand;
     public Fingers Finger;
     public Operator Operator;
     public float Value;
     public bool Active;
     public bool DeactivateOnTrigger = true;
 
-    public ConditionEvent OnTrigger;
+    public UnityEvent<bool> OnTrigger;
 
     public string DebugMessage;
-    
+    public Handedness Hand { get => hand; set => hand = value; }
+
     private HandManager _handMgr;
+    [SerializeField]
+    private Handedness hand;
 
     public bool Met
     {
@@ -33,8 +36,9 @@ public class AngleTrigger : MonoBehaviour, ICondition
         }
     }
 
-    public ConditionEvent OnConditionChanged { get; set; } = new ConditionEvent();
+    public UnityEvent<bool> OnConditionChanged { get; set; } = new UnityEvent<bool>();
 
+    [SerializeField, ReadOnly]
     private bool _met;
 
     private void Start()
@@ -51,10 +55,10 @@ public class AngleTrigger : MonoBehaviour, ICondition
 
     void Update()
     {
-        if (Active)
+        if (Active && HandManager.Instance.IsHandTracked(hand))
         {
             var angle = 0f;
-            angle = _handMgr.FingerAngle(Hand, Finger);
+            angle = _handMgr.FingerAngle(hand, Finger);
             switch (Operator)
             {
                 case Operator.LessThan:

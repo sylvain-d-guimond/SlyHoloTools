@@ -3,6 +3,7 @@
 
 using UnityEditor;
 using UnityEngine;
+using Microsoft.MixedReality.Toolkit.Utilities;
 
 namespace Microsoft.MixedReality.Toolkit.Utilities.Editor
 {

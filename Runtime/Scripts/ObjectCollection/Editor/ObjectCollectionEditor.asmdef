@@ -1,0 +1,18 @@
+{
+    "name": "ObjectCollectionEditor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8c60b70ed3bab7c4a9b2f1f473c12fdf"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

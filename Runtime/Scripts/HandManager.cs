@@ -24,51 +24,75 @@ public class HandManager : MonoBehaviour
 
         _hands = new Dictionary<Fingers, List<TrackedHandJoint>>();
 
-        var index = new List<TrackedHandJoint>();
-        index.Add(TrackedHandJoint.IndexMetacarpal);
-        index.Add(TrackedHandJoint.IndexProximal);
-        index.Add(TrackedHandJoint.IndexIntermediate);
-        index.Add(TrackedHandJoint.IndexDistal);
-        index.Add(TrackedHandJoint.IndexTip);
+        var index = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.IndexMetacarpal,
+            TrackedHandJoint.IndexProximal,
+            TrackedHandJoint.IndexIntermediate,
+            TrackedHandJoint.IndexDistal,
+            TrackedHandJoint.IndexTip
+        };
         _hands.Add(Fingers.Index, index);
 
-        var middle = new List<TrackedHandJoint>();
-        middle.Add(TrackedHandJoint.MiddleMetacarpal);
-        middle.Add(TrackedHandJoint.MiddleProximal);
-        middle.Add(TrackedHandJoint.MiddleIntermediate);
-        middle.Add(TrackedHandJoint.MiddleDistal);
-        middle.Add(TrackedHandJoint.MiddleTip);
+        var middle = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.MiddleMetacarpal,
+            TrackedHandJoint.MiddleProximal,
+            TrackedHandJoint.MiddleIntermediate,
+            TrackedHandJoint.MiddleDistal,
+            TrackedHandJoint.MiddleTip
+        };
         _hands.Add(Fingers.Middle, middle);
 
-        var ring = new List<TrackedHandJoint>();
-        ring.Add(TrackedHandJoint.RingMetacarpal);
-        ring.Add(TrackedHandJoint.RingProximal);
-        ring.Add(TrackedHandJoint.RingIntermediate);
-        ring.Add(TrackedHandJoint.RingDistal);
-        ring.Add(TrackedHandJoint.RingTip);
+        var ring = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.RingMetacarpal,
+            TrackedHandJoint.RingProximal,
+            TrackedHandJoint.RingIntermediate,
+            TrackedHandJoint.RingDistal,
+            TrackedHandJoint.RingTip
+        };
         _hands.Add(Fingers.Ring, ring);
 
-        var pinky = new List<TrackedHandJoint>();
-       pinky.Add(TrackedHandJoint.LittleMetacarpal);
-       pinky.Add(TrackedHandJoint.LittleProximal);
-       pinky.Add(TrackedHandJoint.LittleIntermediate);
-       pinky.Add(TrackedHandJoint.LittleDistal);
-       pinky.Add(TrackedHandJoint.LittleTip);
+        var pinky = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.LittleMetacarpal,
+            TrackedHandJoint.LittleProximal,
+            TrackedHandJoint.LittleIntermediate,
+            TrackedHandJoint.LittleDistal,
+            TrackedHandJoint.LittleTip
+        };
         _hands.Add(Fingers.Pinky, pinky);
 
-        var thumb = new List<TrackedHandJoint>();
-        thumb.Add(TrackedHandJoint.ThumbMetacarpal);
-        thumb.Add(TrackedHandJoint.ThumbProximal);
-        thumb.Add(TrackedHandJoint.ThumbDistal);
-        thumb.Add(TrackedHandJoint.ThumbTip);
+        var thumb = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.ThumbMetacarpal,
+            TrackedHandJoint.ThumbProximal,
+            TrackedHandJoint.ThumbDistal,
+            TrackedHandJoint.ThumbTip
+        };
         _hands.Add(Fingers.Thumb, thumb);
 
-        _metacarpals = new List<TrackedHandJoint>();
-        _metacarpals.Add(TrackedHandJoint.IndexMetacarpal);
-        _metacarpals.Add(TrackedHandJoint.MiddleMetacarpal);
-        _metacarpals.Add(TrackedHandJoint.RingMetacarpal);
-        _metacarpals.Add(TrackedHandJoint.LittleMetacarpal);
-        _metacarpals.Add(TrackedHandJoint.ThumbMetacarpal);
+        _metacarpals = new List<TrackedHandJoint>
+        {
+            TrackedHandJoint.IndexMetacarpal,
+            TrackedHandJoint.MiddleMetacarpal,
+            TrackedHandJoint.RingMetacarpal,
+            TrackedHandJoint.LittleMetacarpal,
+            TrackedHandJoint.ThumbMetacarpal
+        };
+    }
+
+    public bool IsHandTracked(Handedness handedness)
+    {
+        if (handedness == Handedness.None) return true;
+
+        p1.Hand = handedness;
+        p1.Joint = TrackedHandJoint.IndexTip;
+
+        var tracked = p1.TryGetPose(out pose1);
+
+        return tracked;
     }
 
     float AddAngle(Handedness hand, List<TrackedHandJoint> joints)
@@ -77,10 +101,10 @@ public class HandManager : MonoBehaviour
 
         for (int i=0; i<joints.Count-2; i++)
         {
-            if (ExcludeMetacarpals && _metacarpals.Contains(_hands[Fingers.Index][i])) continue;
+            if (ExcludeMetacarpals && _metacarpals.Contains(joints[i])) continue;
             p1.Hand = p2.Hand = hand; 
-            p1.Joint = _hands[Fingers.Index][i];
-            p2.Joint = _hands[Fingers.Index][i+1];
+            p1.Joint = joints[i];
+            p2.Joint = joints[i+1];
             p1.TryGetPose(out pose1);
             p2.TryGetPose(out pose2);
             angle += Vector3.Angle(pose1.forward, pose2.forward);
@@ -97,26 +121,31 @@ public class HandManager : MonoBehaviour
         if ((finger & Fingers.Index) == Fingers.Index)
         {
             angle += AddAngle(hand, _hands[Fingers.Index]);
+            count++;
         }
 
         if ((finger & Fingers.Middle) == Fingers.Middle)
         {
             angle += AddAngle(hand, _hands[Fingers.Middle]);
+            count++;
         }
 
         if ((finger & Fingers.Ring) == Fingers.Ring)
         {
             angle += AddAngle(hand, _hands[Fingers.Ring]);
+            count++;
         }
 
         if ((finger & Fingers.Pinky) == Fingers.Pinky)
         {
             angle += AddAngle(hand, _hands[Fingers.Pinky]);
+            count++;
         }
 
         if ((finger & Fingers.Thumb) == Fingers.Thumb)
         {
             angle += AddAngle(hand, _hands[Fingers.Thumb]);
+            count++;
         }
 
         if (count > 0)

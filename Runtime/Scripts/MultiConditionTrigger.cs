@@ -1,3 +1,4 @@
+using NaughtyAttributes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using UnityEngine.Events;
 
 public class MultiConditionTrigger : MonoBehaviour, ICondition
 {
-    public List<ICondition> Conditions = new List<ICondition>();
+    public List<Component> Conditions = new List<Component>();
     public string DebugText;
 
     public UnityEvent OnConditionsMet;
@@ -24,31 +25,24 @@ public class MultiConditionTrigger : MonoBehaviour, ICondition
             }
         }
     }
+    [SerializeField, ReadOnly]
     private bool _met;
-    public ConditionEvent OnConditionChanged { get; set; } = new ConditionEvent();
+    public UnityEvent<bool> OnConditionChanged { get; set; } = new UnityEvent<bool>();
 
     private void Awake()
     {
-        foreach (var condition in GetComponents<AngleTrigger>())
+        foreach (var condition in Conditions)
         {
-            condition.OnConditionChanged.AddListener(Check);
-            Conditions.Add(condition);
-        }
-        foreach (var condition in GetComponents<DirectionTrigger>())
-        {
-            condition.OnConditionChanged.AddListener(Check);
-            Conditions.Add(condition);
-        }
-        foreach (var condition in GetComponents<MultiDistanceTrigger>())
-        {
-            condition.OnConditionChanged.AddListener(Check);
-            Conditions.Add(condition);
+            if (condition is ICondition iCondition)
+            {
+                iCondition.OnConditionChanged.AddListener(Check);
+            }
         }
     }
 
     public void Check(bool b) {
         if (DebugMode.instance.DebugLevel <= DebugLevels.Debug) Debug.Log($"Check {Conditions.Count} conditions");
-        if (!Conditions.Any(condition => !condition.Met))
+        if (!Conditions.Any(condition => !((ICondition)condition).Met))
         {
             OnConditionsMet.Invoke();
             Met = true;
@@ -64,8 +58,5 @@ public class MultiConditionTrigger : MonoBehaviour, ICondition
 public interface ICondition
 {
     public bool Met { get; set; }
-    public ConditionEvent OnConditionChanged { get; set; }
+    public UnityEvent<bool> OnConditionChanged { get; set; }
 }
-
-[Serializable]
-public class ConditionEvent : UnityEvent<bool> { }
